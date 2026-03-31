@@ -3,11 +3,15 @@ package services
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"gin/internal/models"
 	"gin/internal/utils"
+	"io"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -17,11 +21,12 @@ type CodeExecutor interface {
 	GetSupportedLanguages() []models.LanguageInfo
 }
 
-// PistonCodeExecutor Piston API 代码执行器实现
-type PistonCodeExecutor struct {
-	apiURL  string
-	timeout time.Duration
-	client  *http.Client
+// Judge0CodeExecutor Judge0 API 代码执行器实现
+type Judge0CodeExecutor struct {
+	apiURL      string
+	timeout     time.Duration
+	maxMemoryKB int
+	client      *http.Client
 }
 
 // 支持的语言配置
@@ -29,8 +34,9 @@ var supportedLanguages = map[string]models.LanguageInfo{
 	"python": {
 		ID:         "python",
 		Name:       "Python",
-		Version:    "3.10.0",
+		Version:    "3.13.2",
 		PistonName: "python",
+		Judge0ID:   109,
 		DefaultCode: `# Python 示例代码
 print("Hello, World!")
 
@@ -41,8 +47,9 @@ print("Hello, World!")
 	"javascript": {
 		ID:         "javascript",
 		Name:       "JavaScript (Node.js)",
-		Version:    "18.15.0",
+		Version:    "22.08.0",
 		PistonName: "javascript",
+		Judge0ID:   102,
 		DefaultCode: `// JavaScript 示例代码
 console.log("Hello, World!");
 
@@ -56,8 +63,9 @@ console.log("Hello, World!");
 	"java": {
 		ID:         "java",
 		Name:       "Java",
-		Version:    "15.0.2",
+		Version:    "17.0.6",
 		PistonName: "java",
+		Judge0ID:   91,
 		DefaultCode: `// Java 示例代码
 public class Main {
     public static void main(String[] args) {
@@ -73,8 +81,9 @@ public class Main {
 	"cpp": {
 		ID:         "cpp",
 		Name:       "C++",
-		Version:    "10.2.0",
+		Version:    "14.1.0",
 		PistonName: "cpp",
+		Judge0ID:   105,
 		DefaultCode: `// C++ 示例代码
 #include <iostream>
 using namespace std;
@@ -94,8 +103,9 @@ int main() {
 	"c": {
 		ID:         "c",
 		Name:       "C",
-		Version:    "10.2.0",
+		Version:    "14.1.0",
 		PistonName: "c",
+		Judge0ID:   103,
 		DefaultCode: `// C 示例代码
 #include <stdio.h>
 
@@ -114,8 +124,9 @@ int main() {
 	"go": {
 		ID:         "go",
 		Name:       "Go",
-		Version:    "1.16.2",
+		Version:    "1.23.5",
 		PistonName: "go",
+		Judge0ID:   107,
 		DefaultCode: `// Go 示例代码
 package main
 
@@ -134,8 +145,9 @@ func main() {
 	"rust": {
 		ID:         "rust",
 		Name:       "Rust",
-		Version:    "1.68.2",
+		Version:    "1.85.0",
 		PistonName: "rust",
+		Judge0ID:   108,
 		DefaultCode: `// Rust 示例代码
 fn main() {
     println!("Hello, World!");
@@ -150,34 +162,38 @@ fn main() {
 	"php": {
 		ID:         "php",
 		Name:       "PHP",
-		Version:    "8.2.3",
+		Version:    "8.3.11",
 		PistonName: "php",
+		Judge0ID:   98,
 		DefaultCode: `<?php
 // PHP 示例代码
-echo "Hello, World!\\n";
+echo "Hello, World!\n";
 ?>`,
 	},
 	"ruby": {
 		ID:         "ruby",
 		Name:       "Ruby",
-		Version:    "3.0.1",
+		Version:    "2.7.0",
 		PistonName: "ruby",
+		Judge0ID:   72,
 		DefaultCode: `# Ruby 示例代码
 puts "Hello, World!"`,
 	},
 	"swift": {
 		ID:         "swift",
 		Name:       "Swift",
-		Version:    "5.3.3",
+		Version:    "5.2.3",
 		PistonName: "swift",
+		Judge0ID:   83,
 		DefaultCode: `// Swift 示例代码
 print("Hello, World!")`,
 	},
 	"bash": {
 		ID:         "bash",
 		Name:       "Bash",
-		Version:    "5.2.0",
+		Version:    "5.0.0",
 		PistonName: "bash",
+		Judge0ID:   46,
 		DefaultCode: `#!/bin/bash
 # Bash 示例代码
 echo "Hello, World!"`,
@@ -185,16 +201,18 @@ echo "Hello, World!"`,
 	"lua": {
 		ID:         "lua",
 		Name:       "Lua",
-		Version:    "5.4.4",
+		Version:    "5.3.5",
 		PistonName: "lua",
+		Judge0ID:   64,
 		DefaultCode: `-- Lua 示例代码
 print("Hello, World!")`,
 	},
 	"scala": {
 		ID:         "scala",
 		Name:       "Scala",
-		Version:    "3.2.2",
+		Version:    "3.4.2",
 		PistonName: "scala",
+		Judge0ID:   112,
 		DefaultCode: `// Scala 示例代码
 object Main extends App {
   println("Hello, World!")
@@ -203,8 +221,9 @@ object Main extends App {
 	"haskell": {
 		ID:         "haskell",
 		Name:       "Haskell",
-		Version:    "9.0.1",
+		Version:    "8.8.1",
 		PistonName: "haskell",
+		Judge0ID:   61,
 		DefaultCode: `-- Haskell 示例代码
 main :: IO ()
 main = putStrLn "Hello, World!"`,
@@ -212,78 +231,83 @@ main = putStrLn "Hello, World!"`,
 	"perl": {
 		ID:         "perl",
 		Name:       "Perl",
-		Version:    "5.36.0",
+		Version:    "5.28.1",
 		PistonName: "perl",
+		Judge0ID:   85,
 		DefaultCode: `# Perl 示例代码
-print "Hello, World!\\n";`,
+print "Hello, World!\n";`,
 	},
 }
 
-// NewPistonCodeExecutor 创建新的 Piston 代码执行器
-func NewPistonCodeExecutor(apiURL string, timeout time.Duration, maxIdleConns int, maxIdleConnsPerHost int, idleConnTimeout int) CodeExecutor {
-	// 优化HTTP Client配置（使用配置参数）
-	return &PistonCodeExecutor{
-		apiURL:  apiURL,
-		timeout: timeout,
+// NewJudge0CodeExecutor 创建新的 Judge0 代码执行器
+func NewJudge0CodeExecutor(apiURL string, timeout time.Duration, maxMemoryMB int, maxIdleConns int, maxIdleConnsPerHost int, idleConnTimeout int) CodeExecutor {
+	if maxMemoryMB <= 0 {
+		maxMemoryMB = 128
+	}
+
+	return &Judge0CodeExecutor{
+		apiURL:      strings.TrimRight(apiURL, "/"),
+		timeout:     timeout,
+		maxMemoryKB: maxMemoryMB * 1024,
 		client: &http.Client{
-			Timeout: timeout,
+			Timeout: timeout + 2*time.Second,
 			Transport: &http.Transport{
-				MaxIdleConns:        maxIdleConns,                                 // 最大空闲连接数
-				MaxIdleConnsPerHost: maxIdleConnsPerHost,                          // 每个host的最大空闲连接
-				IdleConnTimeout:     time.Duration(idleConnTimeout) * time.Second, // 空闲连接超时
-				DisableCompression:  false,                                        // 启用压缩
-				DisableKeepAlives:   false,                                        // 启用keep-alive
+				// 当前环境访问 ce.judge0.com 的 IPv6 连接会被远端重置，固定走 IPv4。
+				ForceAttemptHTTP2:   false,
+				MaxIdleConns:        maxIdleConns,
+				MaxIdleConnsPerHost: maxIdleConnsPerHost,
+				IdleConnTimeout:     time.Duration(idleConnTimeout) * time.Second,
+				DisableCompression:  false,
+				DisableKeepAlives:   false,
+				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+					dialer := &net.Dialer{Timeout: timeout}
+					return dialer.DialContext(ctx, "tcp4", addr)
+				},
 			},
 		},
 	}
 }
 
 // Execute 执行代码
-func (e *PistonCodeExecutor) Execute(ctx context.Context, language, code, stdin string) (*models.ExecuteCodeResponse, error) {
+func (e *Judge0CodeExecutor) Execute(ctx context.Context, language, code, stdin string) (*models.ExecuteCodeResponse, error) {
 	logger := utils.GetLogger()
 
-	// 验证语言是否支持
 	langInfo, ok := supportedLanguages[language]
 	if !ok {
 		return nil, fmt.Errorf("不支持的语言: %s", language)
 	}
 
-	// 构建 Piston API 请求
-	pistonReq := models.PistonExecuteRequest{
-		Language: langInfo.PistonName,
-		Version:  langInfo.Version,
-		Files: []struct {
-			Content string `json:"content"`
-		}{
-			{Content: code},
-		},
-		Stdin: stdin,
+	reqPayload := models.Judge0SubmissionRequest{
+		SourceCode:    base64.StdEncoding.EncodeToString([]byte(code)),
+		LanguageID:    langInfo.Judge0ID,
+		Stdin:         base64.StdEncoding.EncodeToString([]byte(stdin)),
+		CPUTimeLimit:  e.timeout.Seconds(),
+		WallTimeLimit: e.timeout.Seconds() + 1,
+		MemoryLimit:   e.maxMemoryKB,
 	}
 
-	reqBody, err := json.Marshal(pistonReq)
+	reqBody, err := json.Marshal(reqPayload)
 	if err != nil {
 		return nil, fmt.Errorf("序列化请求失败: %w", err)
 	}
 
-	// 记录开始时间
-	startTime := time.Now().UTC()
+	startTime := time.Now()
 
-	// 使用对象池创建请求体（优化内存分配）
 	buf := utils.GetBuffer()
 	defer utils.PutBuffer(buf)
 	buf.Write(reqBody)
 
-	// 创建 HTTP 请求
-	req, err := http.NewRequestWithContext(ctx, "POST", e.apiURL+"/execute", bytes.NewReader(buf.Bytes()))
+	requestURL := e.apiURL + "/submissions?base64_encoded=true&wait=true"
+	req, err := http.NewRequestWithContext(ctx, "POST", requestURL, bytes.NewReader(buf.Bytes()))
 	if err != nil {
 		return nil, fmt.Errorf("创建请求失败: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	req.Header.Set("Accept", "application/json")
 
-	// 发送请求
 	resp, err := e.client.Do(req)
 	if err != nil {
-		logger.Error("Piston API 请求失败", "error", err)
+		logger.Error("Judge0 API 请求失败", "error", err)
 		return &models.ExecuteCodeResponse{
 			Output:        "",
 			Error:         "代码执行超时或服务不可用",
@@ -293,37 +317,89 @@ func (e *PistonCodeExecutor) Execute(ctx context.Context, language, code, stdin 
 	}
 	defer resp.Body.Close()
 
-	// 计算执行时间
 	executionTime := int(time.Since(startTime).Milliseconds())
 
-	// 解析响应
-	var pistonResp models.PistonExecuteResponse
-	if err := json.NewDecoder(resp.Body).Decode(&pistonResp); err != nil {
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		var judge0Err models.Judge0ErrorResponse
+		if err := json.Unmarshal(respBody, &judge0Err); err == nil {
+			message := firstNonEmpty(judge0Err.Message, judge0Err.Error)
+			if message != "" {
+				logger.Warn("Judge0 API 返回错误",
+					"status_code", resp.StatusCode,
+					"message", message)
+				return &models.ExecuteCodeResponse{
+					Output:        "",
+					Error:         message,
+					ExecutionTime: executionTime,
+					MemoryUsage:   0,
+					Status:        "error",
+				}, nil
+			}
+		}
+
+		logger.Warn("Judge0 API 返回非成功状态",
+			"status_code", resp.StatusCode,
+			"response_body", utils.TruncateString(string(respBody), 512))
+		return &models.ExecuteCodeResponse{
+			Output:        "",
+			Error:         fmt.Sprintf("代码执行服务暂时不可用（HTTP %d）", resp.StatusCode),
+			ExecutionTime: executionTime,
+			MemoryUsage:   0,
+			Status:        "error",
+		}, nil
+	}
+
+	var judge0Resp models.Judge0SubmissionResponse
+	if err := json.Unmarshal(respBody, &judge0Resp); err != nil {
 		return nil, fmt.Errorf("解析响应失败: %w", err)
 	}
 
-	// 构建返回结果（不包含内存数据，因为公共 Piston API 不提供真实内存信息）
-	result := &models.ExecuteCodeResponse{
-		ExecutionTime: executionTime,
-		MemoryUsage:   0, // 不再提供内存数据
+	if apiError := nullableString(judge0Resp.Error); apiError != "" {
+		logger.Warn("Judge0 提交响应返回错误", "error", apiError)
+		return &models.ExecuteCodeResponse{
+			Output:        "",
+			Error:         apiError,
+			ExecutionTime: executionTime,
+			MemoryUsage:   0,
+			Status:        "error",
+		}, nil
 	}
 
-	// 判断执行状态
-	if pistonResp.Run.Code == 0 && pistonResp.Run.Stderr == "" {
+	stdout := decodeMaybeBase64(nullableString(judge0Resp.Stdout))
+	stderr := decodeMaybeBase64(nullableString(judge0Resp.Stderr))
+	compileOutput := decodeMaybeBase64(nullableString(judge0Resp.CompileOutput))
+	message := decodeMaybeBase64(nullableString(judge0Resp.Message))
+
+	result := &models.ExecuteCodeResponse{
+		Output:        stdout,
+		ExecutionTime: executionTime,
+		MemoryUsage:   judge0Resp.Memory * 1024,
+	}
+
+	switch judge0Resp.Status.ID {
+	case 3:
 		result.Status = "success"
-		result.Output = pistonResp.Run.Stdout
-	} else if pistonResp.Run.Signal != "" {
+	case 5:
 		result.Status = "timeout"
-		result.Error = fmt.Sprintf("执行被信号终止: %s", pistonResp.Run.Signal)
-		result.Output = pistonResp.Run.Stdout
-	} else {
+		result.Error = firstNonEmpty(message, stderr, compileOutput, judge0Resp.Status.Description, "代码执行超时")
+	case 1, 2:
 		result.Status = "error"
-		result.Error = pistonResp.Run.Stderr
-		result.Output = pistonResp.Run.Stdout
+		result.Error = "代码仍在处理中，请稍后重试"
+	default:
+		result.Status = "error"
+		result.Error = firstNonEmpty(compileOutput, stderr, message, judge0Resp.Status.Description, "程序执行失败，但未返回错误详情")
 	}
 
 	logger.Info("代码执行完成",
 		"language", language,
+		"judge0_language_id", langInfo.Judge0ID,
+		"judge0_status_id", judge0Resp.Status.ID,
+		"judge0_status", judge0Resp.Status.Description,
 		"status", result.Status,
 		"execution_time", executionTime,
 		"code_length", len(code))
@@ -332,10 +408,39 @@ func (e *PistonCodeExecutor) Execute(ctx context.Context, language, code, stdin 
 }
 
 // GetSupportedLanguages 获取支持的语言列表
-func (e *PistonCodeExecutor) GetSupportedLanguages() []models.LanguageInfo {
+func (e *Judge0CodeExecutor) GetSupportedLanguages() []models.LanguageInfo {
 	languages := make([]models.LanguageInfo, 0, len(supportedLanguages))
 	for _, lang := range supportedLanguages {
 		languages = append(languages, lang)
 	}
 	return languages
+}
+
+func nullableString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func decodeMaybeBase64(value string) string {
+	if value == "" {
+		return ""
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(value)
+	if err != nil {
+		return value
+	}
+
+	return string(decoded)
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }

@@ -15,7 +15,7 @@ type Container struct {
 	Auth                services.AuthServiceInterface
 	UserSvc             services.UserServiceInterface
 	UserRepo            *services.UserRepository
-	MultiBucket         *services.MultiBucketStorage   // 多桶存储服务（7桶架构）
+	MultiBucket         *services.MultiBucketStorage // 多桶存储服务（7桶架构）
 	StatsRepo           *services.StatisticsRepository
 	HistoryRepo         *services.HistoryRepository
 	CumulativeRepo      *services.CumulativeStatsRepository
@@ -65,9 +65,10 @@ func New(cfg *config.Config, db *services.Database) (*Container, error) {
 
 	// 初始化代码仓库和执行器
 	codeRepo := services.NewCodeRepository(db)
-	codeExecutor := services.NewPistonCodeExecutor(
-		cfg.CodeExecutor.PistonAPIURL,
+	codeExecutor := services.NewJudge0CodeExecutor(
+		cfg.CodeExecutor.ResolvedAPIURL(),
 		time.Duration(cfg.CodeExecutor.Timeout)*time.Second,
+		cfg.CodeExecutor.MaxMemoryMB,
 		cfg.HTTPClient.MaxIdleConns,
 		cfg.HTTPClient.MaxIdleConnsPerHost,
 		cfg.HTTPClient.IdleConnTimeout,

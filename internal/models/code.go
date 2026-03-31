@@ -88,34 +88,41 @@ type LanguageInfo struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Version     string `json:"version"`
-	PistonName  string `json:"piston_name"`  // Piston API 中的语言名称
+	PistonName  string `json:"piston_name"`  // 兼容前端字段，值与语言 ID 保持一致
 	DefaultCode string `json:"default_code"` // 默认代码模板
+	Judge0ID    int    `json:"-"`            // Judge0 语言 ID（仅后端使用）
 }
 
-// PistonExecuteRequest Piston API 执行请求
-type PistonExecuteRequest struct {
-	Language string `json:"language"`
-	Version  string `json:"version"`
-	Files    []struct {
-		Content string `json:"content"`
-	} `json:"files"`
-	Stdin       string   `json:"stdin,omitempty"`
-	CompileArgs []string `json:"compile_args,omitempty"` // 编译参数（可选）
-	RunArgs     []string `json:"run_args,omitempty"`     // 运行参数（可选）
+// Judge0SubmissionRequest Judge0 提交请求
+type Judge0SubmissionRequest struct {
+	SourceCode    string  `json:"source_code"`
+	LanguageID    int     `json:"language_id"`
+	Stdin         string  `json:"stdin,omitempty"`
+	CPUTimeLimit  float64 `json:"cpu_time_limit,omitempty"`
+	WallTimeLimit float64 `json:"wall_time_limit,omitempty"`
+	MemoryLimit   int     `json:"memory_limit,omitempty"` // KB
 }
 
-// PistonExecuteResponse Piston API 执行响应
-type PistonExecuteResponse struct {
-	Run struct {
-		Stdout string `json:"stdout"`
-		Stderr string `json:"stderr"`
-		Code   int    `json:"code"`
-		Signal string `json:"signal"`
-		Output string `json:"output"`
-		Memory int64  `json:"memory"` // 内存使用（KB）
-	} `json:"run"`
-	Language string `json:"language"`
-	Version  string `json:"version"`
+// Judge0SubmissionResponse Judge0 提交响应
+type Judge0SubmissionResponse struct {
+	Stdout        *string `json:"stdout"`
+	Stderr        *string `json:"stderr"`
+	CompileOutput *string `json:"compile_output"`
+	Message       *string `json:"message"`
+	Error         *string `json:"error"`
+	Time          string  `json:"time"`
+	Memory        int64   `json:"memory"` // KB
+	Token         string  `json:"token"`
+	Status        struct {
+		ID          int    `json:"id"`
+		Description string `json:"description"`
+	} `json:"status"`
+}
+
+// Judge0ErrorResponse Judge0 API 错误响应
+type Judge0ErrorResponse struct {
+	Message string `json:"message"`
+	Error   string `json:"error"`
 }
 
 // CodeSnippetListItem 代码片段列表项（简化版）

@@ -171,10 +171,22 @@ type BucketConfig struct {
 
 // CodeExecutorConfig 代码执行器配置
 type CodeExecutorConfig struct {
-	PistonAPIURL string `yaml:"piston_api_url" json:"piston_api_url"`
-	Timeout      int    `yaml:"timeout" json:"timeout"`             // 超时时间（秒）
-	MaxMemoryMB  int    `yaml:"max_memory_mb" json:"max_memory_mb"` // 最大内存（MB）
-	RateLimit    int    `yaml:"rate_limit" json:"rate_limit"`       // 限流：每分钟执行次数
+	APIURL          string `yaml:"api_url" json:"api_url"`
+	LegacyPistonURL string `yaml:"piston_api_url" json:"piston_api_url,omitempty"` // 兼容旧配置
+	Timeout         int    `yaml:"timeout" json:"timeout"`                         // 超时时间（秒）
+	MaxMemoryMB     int    `yaml:"max_memory_mb" json:"max_memory_mb"`             // 最大内存（MB）
+	RateLimit       int    `yaml:"rate_limit" json:"rate_limit"`                   // 限流：每分钟执行次数
+}
+
+// ResolvedAPIURL 获取代码执行服务地址，兼容旧版 piston_api_url 配置
+func (c CodeExecutorConfig) ResolvedAPIURL() string {
+	if c.APIURL != "" {
+		return c.APIURL
+	}
+	if c.LegacyPistonURL != "" {
+		return c.LegacyPistonURL
+	}
+	return "https://ce.judge0.com"
 }
 
 // WebSocketConfig WebSocket配置
@@ -617,7 +629,15 @@ func getDefaultConfig() *Config {
 			OperationTimeout: 10,
 		},
 		CodeExecutor: CodeExecutorConfig{
-			PistonAPIURL: getEnv("PISTON_API_URL", "https://emkc.org/api/v2/piston"),
+			APIURL: func() string {
+				if v := getEnv("CODE_EXECUTOR_API_URL", ""); v != "" {
+					return v
+				}
+				if v := getEnv("PISTON_API_URL", ""); v != "" {
+					return v
+				}
+				return "https://ce.judge0.com"
+			}(),
 			Timeout: func() int {
 				if v := getEnv("CODE_EXECUTOR_TIMEOUT", ""); v != "" {
 					n := parseInt(v)
@@ -954,7 +974,8 @@ func overrideWithEnvVars(config *Config) {
 	setEnvBool(&config.MinIO.UseSSL, "MINIO_USE_SSL")
 
 	// 代码执行器配置
-	setEnvString(&config.CodeExecutor.PistonAPIURL, "PISTON_API_URL")
+	setEnvString(&config.CodeExecutor.APIURL, "CODE_EXECUTOR_API_URL")
+	setEnvString(&config.CodeExecutor.LegacyPistonURL, "PISTON_API_URL")
 	setEnvInt(&config.CodeExecutor.Timeout, "CODE_EXECUTOR_TIMEOUT")
 	setEnvInt(&config.CodeExecutor.MaxMemoryMB, "CODE_EXECUTOR_MAX_MEMORY")
 	setEnvInt(&config.CodeExecutor.RateLimit, "CODE_EXECUTOR_RATE_LIMIT")

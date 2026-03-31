@@ -149,9 +149,9 @@ bucket_system_assets:
   public_base_url: "http://192.168.137.129:9000/system-assets"
   cache_control: "public, max-age=31536000, immutable"  # 永久缓存（不可变）
 
-# 代码执行器配置
+# 代码执行器配置（默认使用 Judge0 CE）
 code_executor:
-  piston_api_url: "https://emkc.org/api/v2/piston"
+  api_url: "https://ce.judge0.com"
   timeout: 10  # 执行超时时间（秒）
   max_memory_mb: 128  # 最大内存限制（MB）
   rate_limit: 10  # 每分钟执行次数限制
