@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title description">
-<title id="title">Shequ · 技术交流社区 · 后端服务 / BACKEND</title>
+<title id="title">Tech Community · 技术交流社区 · 后端服务 / BACKEND</title>
 <desc id="description">Architecture illustration: client, Go and Gin service, MySQL, MinIO and Judge0.</desc>
 <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#102039"/><stop offset="1" stop-color="#080F20"/></linearGradient></defs>
 <style>text{font-family:'Microsoft YaHei','Noto Sans CJK SC','Segoe UI',sans-serif}</style>
@@ -7,9 +7,9 @@
 <circle cx="1240" cy="40" r="330" fill="none" stroke="#4DDBEC" stroke-opacity=".045" stroke-width="70"/>
 <circle cx="1240" cy="40" r="200" fill="none" stroke="#4DDBEC" stroke-opacity=".045" stroke-width="1"/>
 <rect x="64" y="45" width="7" height="22" rx="3" fill="#4DDBEC"/>
-<text x="84" y="62" font-size="16" fill="#C6D2E6" font-weight="500" >qihai-coding / shequ_gin</text>
+<text x="84" y="62" font-size="16" fill="#C6D2E6" font-weight="500" >qihai-coding / tech-community-api</text>
 <text x="64" y="123" font-size="15" fill="#4DDBEC" font-weight="600" letter-spacing="1.4">后端服务 / BACKEND</text>
-<text x="59" y="219" font-size="88" fill="#F3F7FF" font-weight="700" letter-spacing="2">SHEQU</text>
+<text x="62" y="219" font-size="49" fill="#F3F7FF" font-weight="700" >TECH COMMUNITY</text>
 <text x="65" y="276" font-size="36" fill="#F3F7FF" font-weight="600" >技术交流社区</text>
 <text x="65" y="325" font-size="21" fill="#C0CCE0" font-weight="400" >连接内容、身份与实时服务</text>
 <text x="65" y="355" font-size="16" fill="#9DAEC7" font-weight="400" >Content, identity and realtime services.</text>

@@ -1,10 +1,10 @@
-简体中文 · [English（英文）](README.en.md) · [前端仓库](https://github.com/qihai-coding/shequ)
+简体中文 · [English（英文）](README.en.md) · [前端仓库](https://github.com/qihai-coding/tech-community-web)
 
-# Shequ · 技术交流社区后端
+# Tech Community · 技术交流社区后端
 
-![Shequ 社区后端架构示意：客户端通过 Go 与 Gin 服务连接 MySQL 数据库、MinIO 对象存储和 Judge0 代码执行服务](docs/assets/cover.png)
+![Tech Community 社区后端架构示意：客户端通过 Go 与 Gin 服务连接 MySQL 数据库、MinIO 对象存储和 Judge0 代码执行服务](docs/assets/cover.png)
 
-为技术交流社区提供身份认证、内容管理、实时聊天、私信、资源存储和代码执行接口。使用 Go（编程语言）与 Gin（网络服务框架），与 [shequ 前端](https://github.com/qihai-coding/shequ)配套运行。
+为技术交流社区提供身份认证、内容管理、实时聊天、私信、资源存储和代码执行接口。使用 Go（编程语言）与 Gin（网络服务框架），与 [tech-community-web 前端](https://github.com/qihai-coding/tech-community-web)配套运行。
 
 [功能概览](#功能概览) · [系统架构](#系统架构) · [快速开始](#快速开始) · [接口入口](#接口入口) · [运行说明](#运行说明)
 
@@ -35,7 +35,7 @@
 
 ```mermaid
 flowchart LR
-    Client["shequ 前端 / 接口客户端"] -->|"HTTP / WebSocket"| Routes["Gin 路由与中间件"]
+    Client["tech-community-web 前端 / 接口客户端"] -->|"HTTP / WebSocket"| Routes["Gin 路由与中间件"]
     Routes --> Handlers["请求处理器"]
     Handlers --> Services["业务服务与数据访问"]
     Services --> DB["MySQL · 关系型数据库"]
@@ -57,8 +57,8 @@ flowchart LR
 ### 2. 获取代码与初始化数据库
 
 ```sh
-git clone https://github.com/qihai-coding/shequ_gin.git
-cd shequ_gin
+git clone https://github.com/qihai-coding/tech-community-api.git
+cd tech-community-api
 go mod download
 mysql -h 127.0.0.1 -u root -p -e "source sql/init_all_tables.sql"
 ```
@@ -112,7 +112,7 @@ curl http://127.0.0.1:3001/health
 
 数据库检查通过时返回 `{"status":"healthy"}`。也可直接在浏览器中打开该地址。`/health` 检查成功并不代表对象存储读写、所有业务接口或代码执行均已通过验证。
 
-然后按[前端启动说明](https://github.com/qihai-coding/shequ#快速开始)启动社区界面。
+然后按[前端启动说明](https://github.com/qihai-coding/tech-community-web#快速开始)启动社区界面。
 
 ## 接口入口
 
@@ -158,6 +158,6 @@ docs/assets/        仓库展示封面与可编辑矢量源图
 
 ## 反馈与许可
 
-问题与改进建议请提交至 [Issues（问题反馈）](https://github.com/qihai-coding/shequ_gin/issues)，附上复现步骤和已移除密码、令牌及个人信息的日志。
+问题与改进建议请提交至 [Issues（问题反馈）](https://github.com/qihai-coding/tech-community-api/issues)，附上复现步骤和已移除密码、令牌及个人信息的日志。
 
 本项目采用 [MIT（宽松开源许可证）](LICENSE)，版权归属为 `2026 qihai-coding`。第三方依赖仍遵循各自许可证。

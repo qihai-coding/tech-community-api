@@ -1,10 +1,10 @@
-[简体中文（Chinese）](README.md) · English · [Frontend repository](https://github.com/qihai-coding/shequ)
+[简体中文（Chinese）](README.md) · English · [Frontend repository](https://github.com/qihai-coding/tech-community-web)
 
-# Shequ · Technical Community Backend
+# Tech Community · Backend Service
 
-![Shequ backend architecture: clients connect through Go and Gin to MySQL, MinIO and the Judge0 code execution service](docs/assets/cover.png)
+![Tech Community backend architecture: clients connect through Go and Gin to MySQL, MinIO and the Judge0 code execution service](docs/assets/cover.png)
 
-A Go and Gin backend for community authentication, content management, realtime chat, private messages, resource storage and code execution. Designed to work with the [shequ frontend](https://github.com/qihai-coding/shequ).
+A Go and Gin backend for community authentication, content management, realtime chat, private messages, resource storage and code execution. Designed to work with the [tech-community-web frontend](https://github.com/qihai-coding/tech-community-web).
 
 [Features](#features) · [Architecture](#architecture) · [Quick start](#quick-start) · [API entry points](#api-entry-points) · [Runtime notes](#runtime-notes)
 
@@ -35,7 +35,7 @@ Dependency versions are listed in [go.mod](go.mod). Caches and online connection
 
 ```mermaid
 flowchart LR
-    Client["shequ frontend / API client"] -->|"HTTP / WebSocket"| Routes["Gin routes and middleware"]
+    Client["tech-community-web frontend / API client"] -->|"HTTP / WebSocket"| Routes["Gin routes and middleware"]
     Routes --> Handlers["Request handlers"]
     Handlers --> Services["Services and repositories"]
     Services --> DB["MySQL · Database"]
@@ -57,8 +57,8 @@ Startup connects to the database, initializes storage buckets, assembles service
 ### 2. Fetch the code and initialize the database
 
 ```sh
-git clone https://github.com/qihai-coding/shequ_gin.git
-cd shequ_gin
+git clone https://github.com/qihai-coding/tech-community-api.git
+cd tech-community-api
 go mod download
 mysql -h 127.0.0.1 -u root -p -e "source sql/init_all_tables.sql"
 ```
@@ -112,7 +112,7 @@ curl http://127.0.0.1:3001/health
 
 A successful database check returns `{"status":"healthy"}`. You can also open that URL in a browser. A successful `/health` response does not validate object storage transfers, every business endpoint or code execution.
 
-Then follow the [frontend setup instructions](https://github.com/qihai-coding/shequ/blob/main/README.en.md#quick-start).
+Then follow the [frontend setup instructions](https://github.com/qihai-coding/tech-community-web/blob/main/README.en.md#quick-start).
 
 ## API entry points
 
@@ -158,6 +158,6 @@ docs/assets/        Repository cover and editable vector source
 
 ## Feedback and license
 
-Report problems or suggest improvements through [Issues](https://github.com/qihai-coding/shequ_gin/issues), including reproduction steps and logs with passwords, tokens and personal information removed.
+Report problems or suggest improvements through [Issues](https://github.com/qihai-coding/tech-community-api/issues), including reproduction steps and logs with passwords, tokens and personal information removed.
 
 Licensed under the [MIT License](LICENSE). Copyright `2026 qihai-coding`. Third-party dependencies retain their own licenses.
